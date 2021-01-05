@@ -1,19 +1,18 @@
+
 <script>
-    // The respresentation could be achieved potentially with SVGS.
+    export let doors;
     export let size;
+    import Walls from './Walls.svelte';
+    import RoomSpace from './RoomSpace.svelte';
+    import Door from './Door.svelte';
+
+    let directions = doors.split(' ');
 </script>
 
-<svg width={`${size}px`} height={`${size}px`}>
-    <rect class="room" width={`${size}px`} height={`${size}px`}>
-    </rect>
-    <slot/>
-</svg>
-
-<style>
-    .room {
-        fill: royalblue;
-        stroke-width: 10px;
-        stroke: #3c3c3c;
-    }
-</style>
-
+<Walls size={size}>
+    <RoomSpace size={size-10}>
+        {#each directions as direction, i }
+            <Door size={size} location={direction} />
+        {/each}
+    </RoomSpace>
+</Walls>
