@@ -1,5 +1,6 @@
 <script>
 	import {ROWS, COLUMNS, WAYS} from './config';
+	import utils from './utils';
 	import RoomSpace from './RoomSpace.svelte';
 	import Room from './Room.svelte';
 	import Walls from './Walls.svelte';
@@ -10,7 +11,7 @@
 	export let backgroundColor;
 
 
-const newDungeonMap = createRandomDungeon();
+const newDungeonMap = utils.createRandomDungeon({x:COLUMNS, y:ROWS}, WAYS);
 
 </script>
 

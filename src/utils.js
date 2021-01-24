@@ -18,57 +18,52 @@ const generateARandomNumberUpTo = max => {
 };
 
 const generateCoordinates = (bounds) => {
-	console.log(`generateCoordinates - start`);
 	const posY = generateARandomNumberUpTo(bounds.y);
 	const posX = generateARandomNumberUpTo(bounds.x);
 	const coordinates = {x: posX, y:posY};
 	return coordinates;
 };
 
-const getBoundaries = (dungeonMap, direction, x, y) => {
-	console.log(`getBoundaries - start` , x, y);
-	let currentRow = y;
-	let currentColumn = x;
-	let possibleDirections={
+const getBoundaries = (dungeonMap, direction, coordinates, bounds) => {
+	let currentRow = coordinates.y;
+	let currentColumn = coordinates.x;
+	let possibleDirections =  {
 		north: true,
 		east: true,
 		south: true,
 		west:true,
 	};
 
-	let up = {x, y:y-1};
-	let down = {x, y:y+1}; 
-	let left = {x: x-1, y};
-	let right = {x: x+1, y};
+	let up = {x: coordinates.x, y:coordinates.y-1};
+	let down = {x:coordinates.x, y:coordinates.y+1}; 
+	let left = {x: coordinates.x-1, y:coordinates.y};
+	let right = {x: coordinates.x+1, y: coordinates.y};
 	
 	if (currentColumn === 0 && direction === 'west') {
 		possibleDirections.west = false;
 	} 
-	if (currentColumn === COLUMNS-1 && direction === 'east') {
+	if (currentColumn === bounds.x-1 && direction === 'east') {
 		possibleDirections.east = false;
 	} 
 	if (currentRow === 0 && direction === 'north') {
 		possibleDirections.north = false;
 	}
-	if (currentRow === ROWS-1 && direction === 'south') {
+	if (currentRow === bounds.y-1 && direction === 'south') {
 		possibleDirections.south = false;
 	}
 
-	if (currentColumn<=COLUMNS-1 && (direction == 'west' && dungeonMap[calculateIndex(left)].doors.indexOf('east') === -1)) {
-		possibleDirection.west = false;
+	if (currentColumn<=bounds.x-1 && (direction == 'west' && dungeonMap[calculateIndex(left, bounds)].doors.indexOf('east') === -1)) {
+		possibleDirections.west = false;
 	}
-	if (currentColumn>=1 && (direction == 'east' && dungeonMap[calculateIndex(right)].doors.indexOf('west') === -1)) {
-		possibleDirection.east = false;
+	if (currentColumn>=1 && (direction == 'east' && dungeonMap[calculateIndex(right, bounds)].doors.indexOf('west') === -1)) {
+		possibleDirections.east = false;
 	}
-	if (currentRow>=1 && (direction == 'north' && dungeonMap[calculateIndex(up)].doors.indexOf('south') === -1)) {
-		possibleDirection.north = false;
+	if (currentRow>=1 && (direction == 'north' && dungeonMap[calculateIndex(up, bounds)].doors.indexOf('south') === -1)) {
+		possibleDirections.north = false;
 	}
-	if (currentRow<=ROWS-1 && (direction == 'south' && dungeonMap[calculateIndex(down)].doors.indexOf('north') === -1)) {
-		possibleDirection.south = false;
+	if (currentRow<=bounds.y-1 && (direction == 'south' && dungeonMap[calculateIndex(down, bounds)].doors.indexOf('north') === -1)) {
+		possibleDirections.south = false;
 	}
-
-
-
 
 	console.log(`getBoundaries - end - possibleDirections: `, possibleDirections);
 	return possibleDirections;
@@ -77,23 +72,20 @@ const getBoundaries = (dungeonMap, direction, x, y) => {
 
 
 
- const generateRoom = (dungeonMap, x, y) => {
-	console.log(`generateRoom - start`);
-	console.log(`Getting doors in the room...`);
+ const generateRoom = (dungeonMap, coordinates, nWays, bounds) => {	
+	const howMany = generateARandomNumberUpTo(nWays);
 	
-	const howMany = generateARandomNumberUpTo(WAYS);
-	
-	let room = {doors: [], pos: {x, y}, type: 'normal'};
-	let index = calculateIndex({x,y});
+	let room = {doors: [], pos: {x: coordinates.x, y: coordinates.y}, type: 'normal'};
+
 	let remaining = howMany;
 	
 	while(remaining>0) {
 		let door = "";			
 		let dirs = {};
+
 		do {
-			console.log(`Getting the doors to deal with...`);
 	
-			let	whichDoor = generateARandomNumberUpTo(WAYS);
+			let	whichDoor = generateARandomNumberUpTo(nWays);
 			switch(whichDoor) {
 				case 0: door = 'north'; break; 
 				case 1: door = 'east'; break;
@@ -101,11 +93,9 @@ const getBoundaries = (dungeonMap, direction, x, y) => {
 				case 3: door = 'west'; break;
 				default: break;
 			}
-			console.log(`Checking all doors...`);
 	
-			dirs = getBoundaries(dungeonMap,door, x, y);	
+			dirs = getBoundaries(dungeonMap,door, coordinates, bounds);	
 		} while(dirs[door] == false);
-		console.log(`Moving to the next door...`);
 	
 		remaining--;
 
@@ -117,7 +107,6 @@ const getBoundaries = (dungeonMap, direction, x, y) => {
 	if (room.doors.length===0) {
 		room.type='';
 	}
-	console.log(`generateRoom - end - room: `, room);
 	return room;
 }
 
@@ -130,7 +119,7 @@ const getBoundaries = (dungeonMap, direction, x, y) => {
 	let nDoors = null;
 	console.log(`getNonEmptyCell - start`); 
 	do {
-		coordinates = generateCoordinates();
+		coordinates = generateCoordinates({x:COLUMNS, y: ROWS});
 		index = calculateIndex(coordinates, {x:COLUMNS, y: ROWS});
 		nDoors = dungeonMap[index].doors.length;
 		console.log(`Getting number of doors available in the room (nDoors): `, nDoors);
@@ -139,23 +128,22 @@ const getBoundaries = (dungeonMap, direction, x, y) => {
 	return index;
 }
 
- const createRandomDungeon = () => {
-	console.log(`createRandomDungeon - start`);
+const createRandomDungeon = (bounds, nWays) => {
+
 	const dungeonMap = [];
-	for(let i = 0; i < ROWS*COLUMNS; i++) {
+	for(let i = 0; i < bounds.x*bounds.y; i++) {
 		dungeonMap[i] = -1;
 	}
 
-	for (let i = COLUMNS*ROWS; i> 0; i--) {
-		let coordinates = generateCoordinates();
-		let index = calculateIndex(coordinates, {x:COLUMNS, y:ROWS});
+	for (let i = 0; i < bounds.x*bounds.y; i++) {
+		let coordinates = generateCoordinates(bounds);
+		let index = calculateIndex(coordinates, bounds);
 		
 		while(dungeonMap[index]!=-1) {
-			coordinates = generateCoordinates();	
-			index = calculateIndex(coordinates, {x:COLUMNS, y:ROWS});
+			coordinates = generateCoordinates(bounds);	
+			index = calculateIndex(coordinates, bounds);
 		}
-		console.log(`Generating room ${i}...`);
-		dungeonMap[index] = generateRoom(dungeonMap,coordinates.x, coordinates.y);
+		dungeonMap[index] = generateRoom(dungeonMap, coordinates, nWays, bounds);
 	}
 	
 	// Getting starting and end Points. 
